@@ -794,8 +794,9 @@ the NAME.  The whole group is prefixed by string INDENT."
 (defun cider-stacktrace-render-cause (buffer cause num note)
   "Emit into BUFFER the CAUSE NUM, exception class, message, data, and NOTE."
   (with-current-buffer buffer
-    (nrepl-dbind-response cause (class message data spec stacktrace)
+    (nrepl-dbind-response cause (class message data spec stacktrace-with-nils)
       (let ((indent "   ")
+            (stacktrace (seq-filter #'when stacktrace-with-nils))
             (class-face 'cider-stacktrace-error-class-face)
             (message-face 'cider-stacktrace-error-message-face))
         (cider-propertize-region `(cause ,num)
@@ -852,7 +853,9 @@ the NAME.  The whole group is prefixed by string INDENT."
               (goto-char (next-single-property-change (point) 'compile-error))
             (progn
               (while (cider-stacktrace-next-cause))
-              (goto-char (next-single-property-change (point) 'flags)))))))))
+              (when-let ((p (point))
+                         (c (next-single-property-change p 'flags)))
+                (goto-char c)))))))))
 
 (defun cider-stacktrace-render (buffer causes &optional error-types)
   "Emit into BUFFER useful stacktrace information for the CAUSES.
